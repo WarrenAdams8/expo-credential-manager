@@ -162,6 +162,21 @@ export async function GET() {
 - `linkedServiceId` + `idTokenDepositionScopes`: associate linked accounts.
 - `requestVerifiedPhoneNumber`: return `phoneNumber` when available.
 
+## Where To Get `serverClientId`, `linkedServiceId`, and `hostedDomainFilter`
+### `serverClientId` (required for Google Sign-In)
+Use the **Web application** OAuth client ID from Google Cloud Console. This is the client
+ID your backend uses to verify Google ID tokens. Create it in Google Cloud Console under
+Google Auth Platform/Clients, selecting **Web application** as the client type. citeturn0search3turn0search1
+
+### `linkedServiceId` (only if you use linked accounts)
+`linkedServiceId` is the **service ID used for linked account sign-in**. It is only needed
+when you want Google to associate a Google account with an existing account on your backend
+and issue ID tokens for linked accounts. If you are not implementing linked accounts, omit it. citeturn0search4turn0search5
+
+### `hostedDomainFilter`
+Use this to limit Sign in with Google to a **Google Workspace domain**, e.g. `example.com`
+for enterprise-only sign-in. Leave it empty for consumer accounts. citeturn0search3
+
 ## Notes and Limitations
 - Do not set `origin` in request JSON for native apps. Use Digital Asset Links instead.
 - Passkey UX: keep passkeys as the primary sign-in option and passwords as a fallback.
