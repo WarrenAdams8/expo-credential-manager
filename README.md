@@ -133,6 +133,27 @@ await fetch('/api/google/verify', {
 await clearCredentialState();
 ```
 
+## Example Expo API Route: `/api/webauthn/authentication`
+Use this route to fetch WebAuthn authentication options from your backend and return them
+as raw JSON text (the module expects the exact JSON string).
+
+```ts
+// example/app/api/webauthn/authentication+api.ts
+export async function GET() {
+  const response = await fetch('https://your-backend.example.com/webauthn/authentication', {
+    headers: { accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    return new Response(message, { status: response.status });
+  }
+
+  const json = await response.text();
+  return new Response(json, { headers: { 'content-type': 'application/json' } });
+}
+```
+
 ## Google Sign-In Options
 - `filterByAuthorizedAccounts`: show only accounts that already granted consent.
 - `autoSelectEnabled`: auto-select when there is a single available credential.
