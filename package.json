@@ -1,0 +1,27 @@
+{
+  "name": "expo-credential-manager",
+  "version": "0.1.0",
+  "description": "Expo module exposing Android Credential Manager (passkeys and passwords).",
+  "main": "build/index.js",
+  "module": "build/index.js",
+  "types": "build/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "keywords": [
+    "expo",
+    "android",
+    "credential-manager",
+    "passkey",
+    "webauthn"
+  ],
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

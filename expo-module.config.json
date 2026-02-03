@@ -1,0 +1,7 @@
+{
+  "name": "CredentialManager",
+  "platforms": ["android", "ios"],
+  "android": {
+    "package": "expo.modules.credentialmanager"
+  }
+}

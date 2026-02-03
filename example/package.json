@@ -1,0 +1,18 @@
+{
+  "name": "credential-manager-example",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "expo": "*",
+    "expo-constants": "*",
+    "expo-router": "*",
+    "react": "18.2.0",
+    "react-native": "*",
+    "expo-credential-manager": "file:.."
+  }
+}
