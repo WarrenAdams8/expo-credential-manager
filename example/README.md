@@ -26,3 +26,16 @@ Set these in your Convex deployment (via `npx convex env set`):
 - `CONVEX_ISSUER`, `CONVEX_AUDIENCE`
 - `JWT_PRIVATE_KEY_PEM`, `JWT_PUBLIC_JWK`, `JWT_KID`, `JWT_TTL_SECONDS` (optional)
 - `GOOGLE_SERVER_CLIENT_ID` (optional: `GOOGLE_HOSTED_DOMAIN`)
+
+## Dev Build (Required)
+This example uses native Android code, so it **won't work in Expo Go**. Use a dev build:
+```bash
+npx expo install expo-dev-client
+npx expo prebuild
+npx expo run:android
+```
+
+For a shareable build, use EAS:
+```bash
+eas build -p android
+```

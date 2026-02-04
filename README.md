@@ -215,3 +215,17 @@ Required Convex env variables:
 ## Example App
 See `example/` for a minimal Expo app using Google Sign-In, mixed credential retrieval,
 and Expo Router API routes that proxy to Convex HTTP actions under `example/app/api`.
+
+## Dev Build (Required)
+This module includes native Android code, so it **won't work in Expo Go**. Use a dev build:
+```bash
+# inside your app (or example/)
+npx expo install expo-dev-client
+npx expo prebuild
+npx expo run:android
+```
+
+For a shareable build, use EAS:
+```bash
+eas build -p android
+```
