@@ -41,7 +41,7 @@ class CredentialManagerModule : Module() {
     Name("CredentialManager")
 
     Function("isAvailable") {
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
+      true
     }
 
     AsyncFunction("createPasskey") { requestJson: String ->
@@ -52,11 +52,16 @@ class CredentialManagerModule : Module() {
         val response = credentialManager.createCredential(
           activity,
           CreatePublicKeyCredentialRequest(requestJson)
-        ) as CreatePublicKeyCredentialResponse
+        )
+        val publicKeyResponse = response as? CreatePublicKeyCredentialResponse
+          ?: throw CredentialManagerException(
+            "E_UNEXPECTED_RESPONSE",
+            "Expected public key credential response."
+          )
 
         mapOf(
           "type" to "publicKey",
-          "responseJson" to response.registrationResponseJson
+          "responseJson" to publicKeyResponse.registrationResponseJson
         )
       } catch (e: CreateCredentialException) {
         throw mapCreateException(e)
@@ -64,6 +69,12 @@ class CredentialManagerModule : Module() {
     }
 
     AsyncFunction("createPassword") { username: String, password: String ->
+      if (username.isBlank()) {
+        throw CredentialManagerException("E_INVALID_ARGUMENTS", "Username cannot be blank.")
+      }
+      if (password.isBlank()) {
+        throw CredentialManagerException("E_INVALID_ARGUMENTS", "Password cannot be blank.")
+      }
       val activity = currentActivity()
       val credentialManager = CredentialManager.create(activity)
       try {
@@ -81,17 +92,10 @@ class CredentialManagerModule : Module() {
       val activity = currentActivity()
       val credentialManager = CredentialManager.create(activity)
 
-      val publicKeyRequestJson = options["publicKeyRequestJson"] as String?
-      val includePassword = options["password"] as Boolean? ?: false
-      val googleIdOptions = options["googleId"] as Map<String, Any?>?
-      val signInWithGoogleOptions = options["signInWithGoogle"] as Map<String, Any?>?
-
-      if (signInWithGoogleOptions != null) {
-        throw CredentialManagerException(
-          "E_SIGN_IN_WITH_GOOGLE_EXCLUSIVE",
-          "signInWithGoogle cannot be combined with other options. Use signInWithGoogle() instead."
-        )
-      }
+      val publicKeyRequestJson = options["publicKeyRequestJson"] as? String
+      val includePassword = options["password"] as? Boolean ?: false
+      @Suppress("UNCHECKED_CAST")
+      val googleIdOptions = options["googleId"] as? Map<String, Any?>
 
       if (publicKeyRequestJson == null && !includePassword && googleIdOptions == null) {
         throw CredentialManagerException(
@@ -129,7 +133,14 @@ class CredentialManagerModule : Module() {
 
       try {
         val response = credentialManager.getCredential(activity, request)
-        mapCredentialResponse(response.credential)
+        val result = mapCredentialResponse(response.credential)
+        if (result["type"] != "google") {
+          throw CredentialManagerException(
+            "E_UNEXPECTED_CREDENTIAL_TYPE",
+            "Expected Google credential but received ${result["type"]}."
+          )
+        }
+        result
       } catch (e: GetCredentialException) {
         throw mapGetException(e)
       }
@@ -218,20 +229,20 @@ class CredentialManagerModule : Module() {
     activity: Activity,
     options: Map<String, Any?>
   ): GetGoogleIdOption {
-    val serverClientId = options["serverClientId"] as String?
+    val serverClientId = options["serverClientId"] as? String
       ?: getStringResource(activity, "expo_credential_manager_server_client_id")
       ?: throw CredentialManagerException(
         "E_GOOGLE_SERVER_CLIENT_ID_REQUIRED",
         "googleId.serverClientId is required."
       )
 
-    val filterByAuthorizedAccounts = options["filterByAuthorizedAccounts"] as Boolean? ?: true
-    val autoSelectEnabled = options["autoSelectEnabled"] as Boolean? ?: false
-    val nonce = options["nonce"] as String?
-    val linkedServiceId = options["linkedServiceId"] as String?
-    val idTokenDepositionScopes = options["idTokenDepositionScopes"] as List<*>?
+    val filterByAuthorizedAccounts = options["filterByAuthorizedAccounts"] as? Boolean ?: true
+    val autoSelectEnabled = options["autoSelectEnabled"] as? Boolean ?: false
+    val nonce = options["nonce"] as? String
+    val linkedServiceId = options["linkedServiceId"] as? String
+    val idTokenDepositionScopes = options["idTokenDepositionScopes"] as? List<*>
     val requestVerifiedPhoneNumber =
-      options["requestVerifiedPhoneNumber"] as Boolean? ?: false
+      options["requestVerifiedPhoneNumber"] as? Boolean ?: false
 
     if (linkedServiceId == null && idTokenDepositionScopes != null) {
       throw CredentialManagerException(
@@ -259,6 +270,7 @@ class CredentialManagerModule : Module() {
           val scopes = idTokenDepositionScopes
             ?.mapNotNull { it as? String }
             ?.filter { it.isNotBlank() }
+            ?: emptyList()
           associateLinkedAccounts(linkedServiceId, scopes)
         }
         if (requestVerifiedPhoneNumber) {
@@ -272,14 +284,14 @@ class CredentialManagerModule : Module() {
     activity: Activity,
     options: Map<String, Any?>
   ): GetSignInWithGoogleOption {
-    val serverClientId = options["serverClientId"] as String?
+    val serverClientId = options["serverClientId"] as? String
       ?: getStringResource(activity, "expo_credential_manager_server_client_id")
       ?: throw CredentialManagerException(
         "E_GOOGLE_SERVER_CLIENT_ID_REQUIRED",
         "signInWithGoogle.serverClientId is required."
       )
-    val nonce = options["nonce"] as String?
-    val hostedDomainFilter = options["hostedDomainFilter"] as String?
+    val nonce = options["nonce"] as? String
+    val hostedDomainFilter = options["hostedDomainFilter"] as? String
       ?: getStringResource(activity, "expo_credential_manager_hosted_domain_filter")
 
     return GetSignInWithGoogleOption.Builder(serverClientId)

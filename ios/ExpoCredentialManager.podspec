@@ -7,6 +7,6 @@ Pod::Spec.new do |s|
   s.author       = { 'Expo' => 'support@expo.dev' }
   s.platforms    = { :ios => '13.0' }
   s.source       = { :path => '.' }
-  s.source_files = 'ios/**/*.{h,m,mm,swift}'
+  s.source_files = '*.{h,m,mm,swift}'
   s.dependency 'ExpoModulesCore'
 end

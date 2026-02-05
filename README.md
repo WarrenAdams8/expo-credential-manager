@@ -10,12 +10,20 @@ Expo module that exposes Android Credential Manager to JavaScript for passkeys, 
 - Optional config plugin for default `serverClientId` and `hostedDomainFilter`.
 
 ## Requirements
-- Android 4.4 (API 19) and higher for password and federated sign-in.
-- Android 9 (API 28) and higher for passkeys.
+- iOS is a stub (methods throw `E_UNSUPPORTED_PLATFORM`).
 - On Android 13 and lower, Credential Manager relies on Google Play services.
 - Passkeys require Digital Asset Links between your Android app and your relying party domain.
 - Your backend must provide WebAuthn registration/authentication JSON payloads.
-- iOS is a stub (methods throw `E_UNSUPPORTED_PLATFORM`).
+
+### Android API Level Requirements
+
+| Feature | Minimum API Level | Notes |
+|---------|-------------------|-------|
+| Password credentials | 19 (Android 4.4) | Basic password storage and retrieval |
+| Google Sign-In (`googleId` / `signInWithGoogle`) | 19 (Android 4.4) | Requires Google Play Services |
+| Passkeys (`createPasskey` / `publicKeyRequestJson`) | 28 (Android 9) | Throws `E_PASSKEY_UNSUPPORTED` on older devices |
+
+> **Note:** `isAvailable()` returns `true` on all supported Android devices. Feature-specific errors are thrown at runtime if the device doesn't support a particular credential type.
 
 ## Install
 ```
@@ -135,6 +143,25 @@ await fetch('/api/google/verify', {
 // Sign out (clears cached state)
 await clearCredentialState();
 ```
+
+## Google Sign-In: `googleId` vs `signInWithGoogle()`
+
+This module provides two ways to sign in with Google:
+
+| Method | Use Case | UI Behavior |
+|--------|----------|-------------|
+| `getCredential({ googleId: {...} })` | Mixed credential selector (passkey + password + Google) | Shows unified bottom sheet with all available credential types |
+| `signInWithGoogle({...})` | Explicit Google-only consent flow | Shows Google account picker with explicit consent UI |
+
+**When to use `googleId`:**
+- You want a unified sign-in experience where users can choose between passkeys, passwords, and Google accounts
+- For returning users with `filterByAuthorizedAccounts: true`
+- When combining with `publicKeyRequestJson` and/or `password: true`
+
+**When to use `signInWithGoogle()`:**
+- You need explicit user consent (GDPR, new user sign-up flows)
+- You want to limit to a Google Workspace domain via `hostedDomainFilter`
+- You want a dedicated Google sign-in button experience
 
 ## Google Sign-In Options
 - `filterByAuthorizedAccounts`: show only accounts that already granted consent.
