@@ -167,7 +167,7 @@ This module provides two ways to sign in with Google:
 - `filterByAuthorizedAccounts`: show only accounts that already granted consent.
 - `autoSelectEnabled`: auto-select when there is a single available credential.
 - `nonce`: include a nonce in the ID token for backend verification.
-- `hostedDomainFilter`: limit to a Google Workspace domain (Sign in with Google only).
+- `hostedDomainFilter` (optional): limit to a Google Workspace domain (enterprise only; omit for consumer apps).
 - `linkedServiceId` + `idTokenDepositionScopes`: associate linked accounts.
 - `requestVerifiedPhoneNumber`: return `phoneNumber` when available.
 
@@ -182,9 +182,12 @@ Google Auth Platform/Clients, selecting **Web application** as the client type.
 when you want Google to associate a Google account with an existing account on your backend
 and issue ID tokens for linked accounts. If you are not implementing linked accounts, omit it.
 
-### `hostedDomainFilter`
-Use this to limit Sign in with Google to a **Google Workspace domain**, e.g. `example.com`
-for enterprise-only sign-in. Leave it empty for consumer accounts.
+### `hostedDomainFilter` (optional)
+`hostedDomainFilter` is **optional** and only needed for enterprise use cases. Use it to
+restrict Sign in with Google to a specific **Google Workspace domain** (e.g., `example.com`).
+
+- **Omit it entirely** for consumer apps that allow any Google account.
+- Only set it if you want to limit sign-in to users from a specific organization.
 
 ## Notes and Limitations
 - Do not set `origin` in request JSON for native apps. Use Digital Asset Links instead.
