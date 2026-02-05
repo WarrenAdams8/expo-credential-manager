@@ -168,7 +168,7 @@ This module provides two ways to sign in with Google:
 - `autoSelectEnabled`: auto-select when there is a single available credential.
 - `nonce`: include a nonce in the ID token for backend verification.
 - `hostedDomainFilter` (optional): limit to a Google Workspace domain (enterprise only; omit for consumer apps).
-- `linkedServiceId` + `idTokenDepositionScopes`: associate linked accounts.
+- `linkedServiceId` + `idTokenDepositionScopes` (optional, advanced): for [Google Account Linking](https://developers.google.com/identity/account-linking) only; omit for most apps.
 - `requestVerifiedPhoneNumber`: return `phoneNumber` when available.
 
 ## Where To Get `serverClientId`, `linkedServiceId`, and `hostedDomainFilter`
@@ -177,10 +177,15 @@ Use the **Web application** OAuth client ID from Google Cloud Console. This is t
 ID your backend uses to verify Google ID tokens. Create it in Google Cloud Console under
 Google Auth Platform/Clients, selecting **Web application** as the client type.
 
-### `linkedServiceId` (only if you use linked accounts)
-`linkedServiceId` is the **service ID used for linked account sign-in**. It is only needed
-when you want Google to associate a Google account with an existing account on your backend
-and issue ID tokens for linked accounts. If you are not implementing linked accounts, omit it.
+### `linkedServiceId` + `idTokenDepositionScopes` (optional, advanced)
+These are only needed if you're implementing [Google Account Linking](https://developers.google.com/identity/account-linking),
+an advanced feature that lets users link their Google account to an existing account on your service.
+
+- **`linkedServiceId`**: The service ID you register with Google when setting up account linking.
+- **`idTokenDepositionScopes`**: OAuth scopes (e.g., `['https://www.googleapis.com/auth/userinfo.profile']`) 
+  included when Google issues ID tokens for linked accounts.
+
+**For most apps:** Omit both entirely. Only use them if you've registered a linked service with Google.
 
 ### `hostedDomainFilter` (optional)
 `hostedDomainFilter` is **optional** and only needed for enterprise use cases. Use it to
