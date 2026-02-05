@@ -32,16 +32,45 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import expo.modules.kotlin.exception.CodedException
-import expo.modules.kotlin.exception.MissingActivityException
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.records.Field
+import expo.modules.kotlin.records.Record
+
+class GoogleIdOptionsRecord : Record {
+  @Field val serverClientId: String? = null
+  @Field val nonce: String? = null
+  @Field val filterByAuthorizedAccounts: Boolean = true
+  @Field val autoSelectEnabled: Boolean = false
+  @Field val linkedServiceId: String? = null
+  @Field val idTokenDepositionScopes: List<String>? = null
+  @Field val requestVerifiedPhoneNumber: Boolean = false
+}
+
+class GetCredentialOptionsRecord : Record {
+  @Field val publicKeyRequestJson: String? = null
+  @Field val password: Boolean = false
+  @Field val googleId: GoogleIdOptionsRecord? = null
+}
+
+class SignInWithGoogleOptionsRecord : Record {
+  @Field val serverClientId: String? = null
+  @Field val nonce: String? = null
+  @Field val hostedDomainFilter: String? = null
+}
 
 class CredentialManagerModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("CredentialManager")
 
     Function("isAvailable") {
-      true
+      try {
+        val activity = appContext.activityProvider?.currentActivity ?: return@Function false
+        CredentialManager.create(activity)
+        true
+      } catch (e: Exception) {
+        false
+      }
     }
 
     AsyncFunction("createPasskey") { requestJson: String ->
@@ -88,14 +117,13 @@ class CredentialManagerModule : Module() {
       }
     }
 
-    AsyncFunction("getCredential") { options: Map<String, Any?> ->
+    AsyncFunction("getCredential") { options: GetCredentialOptionsRecord ->
       val activity = currentActivity()
       val credentialManager = CredentialManager.create(activity)
 
-      val publicKeyRequestJson = options["publicKeyRequestJson"] as? String
-      val includePassword = options["password"] as? Boolean ?: false
-      @Suppress("UNCHECKED_CAST")
-      val googleIdOptions = options["googleId"] as? Map<String, Any?>
+      val publicKeyRequestJson = options.publicKeyRequestJson
+      val includePassword = options.password
+      val googleIdOptions = options.googleId
 
       if (publicKeyRequestJson == null && !includePassword && googleIdOptions == null) {
         throw CredentialManagerException(
@@ -124,7 +152,7 @@ class CredentialManagerModule : Module() {
       }
     }
 
-    AsyncFunction("signInWithGoogle") { options: Map<String, Any?> ->
+    AsyncFunction("signInWithGoogle") { options: SignInWithGoogleOptionsRecord ->
       val activity = currentActivity()
       val credentialManager = CredentialManager.create(activity)
       val request = GetCredentialRequest.Builder()
@@ -163,7 +191,8 @@ class CredentialManagerModule : Module() {
   }
 
   private fun currentActivity(): Activity {
-    return appContext.activityProvider?.currentActivity ?: throw MissingActivityException()
+    return appContext.activityProvider?.currentActivity
+      ?: throw CredentialManagerException("E_NO_ACTIVITY", "No activity available. Ensure the app is in the foreground.")
   }
 
   private fun ensurePasskeySupported() {
@@ -196,7 +225,7 @@ class CredentialManagerModule : Module() {
             mapOf(
               "type" to "google",
               "idToken" to google.idToken,
-              "id" to google.uniqueId,
+              "userId" to google.id,
               "email" to google.email,
               "displayName" to google.displayName,
               "givenName" to google.givenName,
@@ -227,22 +256,21 @@ class CredentialManagerModule : Module() {
 
   private fun buildGoogleIdOption(
     activity: Activity,
-    options: Map<String, Any?>
+    options: GoogleIdOptionsRecord
   ): GetGoogleIdOption {
-    val serverClientId = options["serverClientId"] as? String
+    val serverClientId = options.serverClientId
       ?: getStringResource(activity, "expo_credential_manager_server_client_id")
       ?: throw CredentialManagerException(
         "E_GOOGLE_SERVER_CLIENT_ID_REQUIRED",
         "googleId.serverClientId is required."
       )
 
-    val filterByAuthorizedAccounts = options["filterByAuthorizedAccounts"] as? Boolean ?: true
-    val autoSelectEnabled = options["autoSelectEnabled"] as? Boolean ?: false
-    val nonce = options["nonce"] as? String
-    val linkedServiceId = options["linkedServiceId"] as? String
-    val idTokenDepositionScopes = options["idTokenDepositionScopes"] as? List<*>
-    val requestVerifiedPhoneNumber =
-      options["requestVerifiedPhoneNumber"] as? Boolean ?: false
+    val filterByAuthorizedAccounts = options.filterByAuthorizedAccounts
+    val autoSelectEnabled = options.autoSelectEnabled
+    val nonce = options.nonce
+    val linkedServiceId = options.linkedServiceId
+    val idTokenDepositionScopes = options.idTokenDepositionScopes
+    val requestVerifiedPhoneNumber = options.requestVerifiedPhoneNumber
 
     if (linkedServiceId == null && idTokenDepositionScopes != null) {
       throw CredentialManagerException(
@@ -268,7 +296,6 @@ class CredentialManagerModule : Module() {
         }
         if (!linkedServiceId.isNullOrBlank()) {
           val scopes = idTokenDepositionScopes
-            ?.mapNotNull { it as? String }
             ?.filter { it.isNotBlank() }
             ?: emptyList()
           associateLinkedAccounts(linkedServiceId, scopes)
@@ -282,16 +309,16 @@ class CredentialManagerModule : Module() {
 
   private fun buildSignInWithGoogleOption(
     activity: Activity,
-    options: Map<String, Any?>
+    options: SignInWithGoogleOptionsRecord
   ): GetSignInWithGoogleOption {
-    val serverClientId = options["serverClientId"] as? String
+    val serverClientId = options.serverClientId
       ?: getStringResource(activity, "expo_credential_manager_server_client_id")
       ?: throw CredentialManagerException(
         "E_GOOGLE_SERVER_CLIENT_ID_REQUIRED",
         "signInWithGoogle.serverClientId is required."
       )
-    val nonce = options["nonce"] as? String
-    val hostedDomainFilter = options["hostedDomainFilter"] as? String
+    val nonce = options.nonce
+    val hostedDomainFilter = options.hostedDomainFilter
       ?: getStringResource(activity, "expo_credential_manager_hosted_domain_filter")
 
     return GetSignInWithGoogleOption.Builder(serverClientId)

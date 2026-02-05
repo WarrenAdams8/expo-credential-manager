@@ -26,8 +26,16 @@ Expo module that exposes Android Credential Manager to JavaScript for passkeys, 
 > **Note:** `isAvailable()` returns `true` on all supported Android devices. Feature-specific errors are thrown at runtime if the device doesn't support a particular credential type.
 
 ## Install
+```bash
+npx expo install expo-credential-manager
+# or
+npm install expo-credential-manager
 ```
-# package name for this repo is expo-credential-manager
+
+After installation, rebuild your development client:
+```bash
+npx expo prebuild
+npx expo run:android
 ```
 
 ## API Summary
@@ -56,6 +64,29 @@ signInWithGoogle(options: {
 clearCredentialState(): Promise<void>
 ```
 
+**Return Types:**
+- `Passkey`: `{ type: 'publicKey'; responseJson: string }`
+- `Password`: `{ type: 'password'; userId: string; password: string }`
+- `Google`: `{ type: 'google'; userId: string; idToken: string; email?: string; displayName?: string; familyName?: string; givenName?: string; phoneNumber?: string; profilePictureUri?: string }`
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `E_UNSUPPORTED_PLATFORM` | Called on iOS or web (only Android is supported) |
+| `E_NO_ACTIVITY` | No foreground activity available |
+| `E_CANCELLED` | User cancelled the credential operation |
+| `E_NO_CREDENTIAL` | No matching credential found |
+| `E_PASSKEY_UNSUPPORTED` | Passkeys require Android 9 (API 28) or higher |
+| `E_NO_OPTIONS` | `getCredential()` called without any credential options |
+| `E_INVALID_ARGUMENTS` | Invalid arguments (e.g., blank username/password) |
+| `E_GOOGLE_SERVER_CLIENT_ID_REQUIRED` | Missing `serverClientId` for Google Sign-In |
+| `E_GOOGLE_LINKED_SERVICE_ID_REQUIRED` | `idTokenDepositionScopes` requires `linkedServiceId` |
+| `E_GOOGLE_PHONE_REQUIRES_SIGN_UP` | `requestVerifiedPhoneNumber` requires `filterByAuthorizedAccounts=false` |
+| `E_INTERRUPTED` | Operation was interrupted |
+| `E_PROVIDER_CONFIGURATION` | Credential provider configuration error |
+| `E_UNKNOWN` | Unknown error occurred |
+
 ## Expo Config Plugin (Optional)
 Add a config plugin to provide default values on Android. These are used when
 `serverClientId` (and `hostedDomainFilter` for Sign in with Google) are omitted in JS.
@@ -75,6 +106,8 @@ Add a config plugin to provide default values on Android. These are used when
   }
 }
 ```
+
+**Option Precedence:** JavaScript options override config plugin values. If you pass `serverClientId` in JS, it takes precedence over the plugin configuration.
 
 ## Usage
 ```ts
@@ -194,11 +227,34 @@ restrict Sign in with Google to a specific **Google Workspace domain** (e.g., `e
 - **Omit it entirely** for consumer apps that allow any Google account.
 - Only set it if you want to limit sign-in to users from a specific organization.
 
+## Security Considerations
+
+### Sensitive Data Handling
+- **Never log** `password` or `idToken` values. These are sensitive credentials.
+- **Do not persist** credentials in AsyncStorage, state, or analytics.
+- **Send credentials directly to your backend** for verification.
+
+### Backend Verification (Required)
+- **Google ID tokens**: Verify server-side using Google's tokeninfo endpoint or libraries. Check `aud` matches your `serverClientId` and validate `nonce` if used.
+- **WebAuthn responses**: Verify `responseJson` server-side using your WebAuthn library (e.g., SimpleWebAuthn, webauthn-rs).
+- **Passwords**: Never send plaintext passwords over unencrypted connections. Use HTTPS and hash passwords server-side.
+
+### Example: Secure ID Token Handling
+```ts
+const credential = await signInWithGoogle({ serverClientId: 'YOUR_ID' });
+// Send directly to backend - do not log or store
+await fetch('/api/auth/google', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ idToken: credential.idToken }),
+});
+```
+
 ## Notes and Limitations
 - Do not set `origin` in request JSON for native apps. Use Digital Asset Links instead.
 - Passkey UX: keep passkeys as the primary sign-in option and passwords as a fallback.
 - `signInWithGoogle` must be used alone (do not combine with passkey/password requests).
-- Google credentials return `id` (email) and `idToken` for backend verification.
+- Google credentials return `userId` (stable unique identifier) and optionally `email`, plus `idToken` for backend verification.
 - Use your server (web) OAuth client ID for `serverClientId` (not the Android client ID).
 - `requestVerifiedPhoneNumber` requires `filterByAuthorizedAccounts=false`.
 - When using the config plugin, you can omit `serverClientId` and `hostedDomainFilter` in JS.
