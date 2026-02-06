@@ -19,9 +19,9 @@ Expo module that exposes Android Credential Manager to JavaScript for passkeys, 
 
 | Feature | Minimum API Level | Notes |
 |---------|-------------------|-------|
-| Password credentials | 19 (Android 4.4) | Basic password storage and retrieval |
-| Google Sign-In (`googleId` / `signInWithGoogle`) | 19 (Android 4.4) | Requires Google Play Services |
-| Passkeys (`createPasskey` / `publicKeyRequestJson`) | 28 (Android 9) | Throws `E_PASSKEY_UNSUPPORTED` on older devices |
+| Password credentials | 21 (Android 5.0) | Basic password storage and retrieval |
+| Google Sign-In (`googleId` / `signInWithGoogle`) | 21 (Android 5.0) | Requires Google Play Services |
+| Passkeys (`createPasskey` / `publicKeyRequestJson`) | 21 (Android 5.0) | Requires Google Play Services on older devices |
 
 > **Note:** `isAvailable()` returns `true` on all supported Android devices. Feature-specific errors are thrown at runtime if the device doesn't support a particular credential type.
 
@@ -66,25 +66,33 @@ clearCredentialState(): Promise<void>
 
 **Return Types:**
 - `Passkey`: `{ type: 'publicKey'; responseJson: string }`
-- `Password`: `{ type: 'password'; userId: string; password: string }`
+- `Password`: `{ type: 'password'; id: string; password: string }`
 - `Google`: `{ type: 'google'; userId: string; idToken: string; email?: string; displayName?: string; familyName?: string; givenName?: string; phoneNumber?: string; profilePictureUri?: string }`
 
 ## Error Codes
 
 | Code | Description |
 |------|-------------|
-| `E_UNSUPPORTED_PLATFORM` | Called on iOS or web (only Android is supported) |
+| `E_UNSUPPORTED_PLATFORM` | Called on iOS or web, or native module not found |
+| `E_INVALID_OPTIONS` | `getCredential()` called without any credential options |
+| `E_INVALID_INPUT` | Invalid input (e.g., blank username, password, or requestJson) |
 | `E_NO_ACTIVITY` | No foreground activity available |
 | `E_CANCELLED` | User cancelled the credential operation |
 | `E_NO_CREDENTIAL` | No matching credential found |
-| `E_PASSKEY_UNSUPPORTED` | Passkeys require Android 9 (API 28) or higher |
-| `E_NO_OPTIONS` | `getCredential()` called without any credential options |
-| `E_INVALID_ARGUMENTS` | Invalid arguments (e.g., blank username/password) |
 | `E_GOOGLE_SERVER_CLIENT_ID_REQUIRED` | Missing `serverClientId` for Google Sign-In |
 | `E_GOOGLE_LINKED_SERVICE_ID_REQUIRED` | `idTokenDepositionScopes` requires `linkedServiceId` |
 | `E_GOOGLE_PHONE_REQUIRES_SIGN_UP` | `requestVerifiedPhoneNumber` requires `filterByAuthorizedAccounts=false` |
+| `E_GOOGLE_ID_TOKEN_PARSE` | Failed to parse Google ID token from credential |
+| `E_UNEXPECTED_RESPONSE` | Unexpected response type from native credential API |
+| `E_UNEXPECTED_CREDENTIAL_TYPE` | Expected Google credential but received a different type |
+| `E_UNSUPPORTED_CREDENTIAL` | Unsupported credential type returned by the system |
 | `E_INTERRUPTED` | Operation was interrupted |
+| `E_NO_CREATE_OPTION` | No create option available for credential creation |
 | `E_PROVIDER_CONFIGURATION` | Credential provider configuration error |
+| `E_CREATE_CREDENTIAL` | Generic credential creation error |
+| `E_GET_CREDENTIAL` | Generic credential retrieval error |
+| `E_CLEAR_CREDENTIAL_STATE` | Failed to clear credential state |
+| `E_CUSTOM` | Custom credential provider error |
 | `E_UNKNOWN` | Unknown error occurred |
 
 ## Expo Config Plugin (Optional)

@@ -1,4 +1,3 @@
-// Mock CodedError class
 class MockCodedError extends Error {
   code: string;
   constructor(code: string, message: string) {
@@ -8,8 +7,7 @@ class MockCodedError extends Error {
   }
 }
 
-// Default mock for iOS/unsupported platform
-const createMock = (platform: string, nativeModule: any) => ({
+const createMock = (platform: string, nativeModule: unknown) => ({
   Platform: { OS: platform },
   requireOptionalNativeModule: jest.fn(() => nativeModule),
   CodedError: MockCodedError,
@@ -78,13 +76,35 @@ describe('CredentialManagerModule', () => {
 
     beforeEach(() => {
       jest.doMock('expo-modules-core', () => createMock('android', mockNativeModule));
-      // Reset mock function calls
       Object.values(mockNativeModule).forEach(fn => fn.mockClear());
     });
 
     it('isAvailable returns true when native module available', async () => {
       const { isAvailable } = await import('../CredentialManagerModule');
       expect(await isAvailable()).toBe(true);
+    });
+
+    describe('createPasskey validation', () => {
+      it('throws E_INVALID_INPUT for empty requestJson', async () => {
+        const { createPasskey } = await import('../CredentialManagerModule');
+        await expect(createPasskey('')).rejects.toMatchObject({
+          code: 'E_INVALID_INPUT',
+        });
+      });
+
+      it('throws E_INVALID_INPUT for whitespace-only requestJson', async () => {
+        const { createPasskey } = await import('../CredentialManagerModule');
+        await expect(createPasskey('   ')).rejects.toMatchObject({
+          code: 'E_INVALID_INPUT',
+        });
+      });
+
+      it('calls native module with valid requestJson', async () => {
+        mockNativeModule.createPasskey.mockResolvedValue({ type: 'publicKey', responseJson: '{}' });
+        const { createPasskey } = await import('../CredentialManagerModule');
+        await createPasskey('{"challenge":"abc"}');
+        expect(mockNativeModule.createPasskey).toHaveBeenCalledWith('{"challenge":"abc"}');
+      });
     });
 
     describe('createPassword validation', () => {
@@ -132,6 +152,20 @@ describe('CredentialManagerModule', () => {
         });
       });
 
+      it('throws E_INVALID_OPTIONS for empty-string publicKeyRequestJson', async () => {
+        const { getCredential } = await import('../CredentialManagerModule');
+        await expect(getCredential({ publicKeyRequestJson: '' } as any)).rejects.toMatchObject({
+          code: 'E_INVALID_OPTIONS',
+        });
+      });
+
+      it('throws E_INVALID_OPTIONS for whitespace-only publicKeyRequestJson', async () => {
+        const { getCredential } = await import('../CredentialManagerModule');
+        await expect(getCredential({ publicKeyRequestJson: '   ' } as any)).rejects.toMatchObject({
+          code: 'E_INVALID_OPTIONS',
+        });
+      });
+
       it('accepts password option', async () => {
         mockNativeModule.getCredential.mockResolvedValue({ type: 'password', id: 'user', password: 'pass' });
         const { getCredential } = await import('../CredentialManagerModule');
@@ -171,6 +205,38 @@ describe('CredentialManagerModule', () => {
         expect(mockNativeModule.clearCredentialState).toHaveBeenCalled();
       });
     });
+
+    describe('native error propagation', () => {
+      it('propagates native E_CANCELLED error from getCredential', async () => {
+        mockNativeModule.getCredential.mockRejectedValue(
+          new MockCodedError('E_CANCELLED', 'User cancelled.')
+        );
+        const { getCredential } = await import('../CredentialManagerModule');
+        await expect(getCredential({ password: true })).rejects.toMatchObject({
+          code: 'E_CANCELLED',
+        });
+      });
+
+      it('propagates native E_NO_CREDENTIAL error from getCredential', async () => {
+        mockNativeModule.getCredential.mockRejectedValue(
+          new MockCodedError('E_NO_CREDENTIAL', 'No credentials available.')
+        );
+        const { getCredential } = await import('../CredentialManagerModule');
+        await expect(getCredential({ password: true })).rejects.toMatchObject({
+          code: 'E_NO_CREDENTIAL',
+        });
+      });
+
+      it('propagates native error from createPasskey', async () => {
+        mockNativeModule.createPasskey.mockRejectedValue(
+          new MockCodedError('E_CREATE_CREDENTIAL', 'Create failed.')
+        );
+        const { createPasskey } = await import('../CredentialManagerModule');
+        await expect(createPasskey('{}')).rejects.toMatchObject({
+          code: 'E_CREATE_CREDENTIAL',
+        });
+      });
+    });
   });
 
   describe('on Android without native module', () => {
@@ -183,9 +249,17 @@ describe('CredentialManagerModule', () => {
       expect(await isAvailable()).toBe(false);
     });
 
-    it('createPasskey throws E_UNSUPPORTED_PLATFORM', async () => {
+    it('createPasskey throws E_UNSUPPORTED_PLATFORM with module-not-found message', async () => {
       const { createPasskey } = await import('../CredentialManagerModule');
       await expect(createPasskey('{}')).rejects.toMatchObject({
+        code: 'E_UNSUPPORTED_PLATFORM',
+        message: expect.stringContaining('native module not found'),
+      });
+    });
+
+    it('getCredential throws E_UNSUPPORTED_PLATFORM', async () => {
+      const { getCredential } = await import('../CredentialManagerModule');
+      await expect(getCredential({ password: true })).rejects.toMatchObject({
         code: 'E_UNSUPPORTED_PLATFORM',
       });
     });

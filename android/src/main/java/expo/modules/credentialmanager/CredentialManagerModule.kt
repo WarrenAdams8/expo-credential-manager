@@ -1,7 +1,6 @@
 package expo.modules.credentialmanager
 
 import android.app.Activity
-import android.os.Build
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CreatePasswordRequest
@@ -75,7 +74,6 @@ class CredentialManagerModule : Module() {
 
     AsyncFunction("createPasskey") { requestJson: String ->
       val activity = currentActivity()
-      ensurePasskeySupported()
       val credentialManager = CredentialManager.create(activity)
       try {
         val response = credentialManager.createCredential(
@@ -99,10 +97,10 @@ class CredentialManagerModule : Module() {
 
     AsyncFunction("createPassword") { username: String, password: String ->
       if (username.isBlank()) {
-        throw CredentialManagerException("E_INVALID_ARGUMENTS", "Username cannot be blank.")
+        throw CredentialManagerException("E_INVALID_INPUT", "Username cannot be blank.")
       }
       if (password.isBlank()) {
-        throw CredentialManagerException("E_INVALID_ARGUMENTS", "Password cannot be blank.")
+        throw CredentialManagerException("E_INVALID_INPUT", "Password cannot be blank.")
       }
       val activity = currentActivity()
       val credentialManager = CredentialManager.create(activity)
@@ -127,14 +125,13 @@ class CredentialManagerModule : Module() {
 
       if (publicKeyRequestJson == null && !includePassword && googleIdOptions == null) {
         throw CredentialManagerException(
-          "E_NO_OPTIONS",
+          "E_INVALID_OPTIONS",
           "Provide publicKeyRequestJson, googleId, and/or set password=true."
         )
       }
 
       val builder = GetCredentialRequest.Builder()
       if (publicKeyRequestJson != null) {
-        ensurePasskeySupported()
         builder.addCredentialOption(GetPublicKeyCredentialOption(publicKeyRequestJson))
       }
       if (includePassword) {
@@ -193,15 +190,6 @@ class CredentialManagerModule : Module() {
   private fun currentActivity(): Activity {
     return appContext.activityProvider?.currentActivity
       ?: throw CredentialManagerException("E_NO_ACTIVITY", "No activity available. Ensure the app is in the foreground.")
-  }
-
-  private fun ensurePasskeySupported() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-      throw CredentialManagerException(
-        "E_PASSKEY_UNSUPPORTED",
-        "Passkeys require Android 9 (API 28) or higher."
-      )
-    }
   }
 
   private fun mapCredentialResponse(credential: androidx.credentials.Credential): Map<String, Any?> {

@@ -18,9 +18,9 @@
     "webauthn"
   ],
   "peerDependencies": {
-    "expo": "*",
-    "expo-modules-core": "*",
-    "react": "*"
+    "expo": ">=50.0.0",
+    "expo-modules-core": ">=1.11.0",
+    "react": ">=18.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
