@@ -1,6 +1,6 @@
 {
   "name": "expo-credential-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Expo module exposing Android Credential Manager (passkeys and passwords).",
   "license": "MIT",
   "repository": {
@@ -49,8 +49,16 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.ts"],
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
+    ],
     "clearMocks": true
   }
 }
