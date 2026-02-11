@@ -1,6 +1,6 @@
 {
   "name": "expo-credential-manager",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Expo module exposing Android Credential Manager (passkeys and passwords).",
   "license": "MIT",
   "repository": {
